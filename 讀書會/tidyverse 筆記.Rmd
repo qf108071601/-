@@ -1,0 +1,336 @@
+---
+title: "tidyverse 筆記"
+author: "賴冠維"
+date: "2020/10/13"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+
+df <- tibble(
+  name = c("Alice", "Alice", "Bob", "Bob", "Carol", "Carol"),
+  type = c("english", "math", "english", "math", "english", "math"),
+  score = c(60.2, 90.5, 92.2, 98.8, 82.5, 74.6)
+)
+
+```
+
+tidyverse::case_when()：可以分類
+## 範例
+```{r}
+df %>% mutate(
+  assess = case_when(
+    score < 70 ~ "general",
+    score >= 70 & score < 80 ~ "good",
+    score >= 80 & score < 90 ~ "very_good",
+    score >= 90 ~ "best",
+    TRUE ~ "other"
+  )
+)
+```
+
+
+
+
+## summarise()生成list-column
+```{r}
+library(gapminder)
+gapminder %>%
+  group_by(continent) %>%
+  summarise(
+    avg_gdpPercap = mean(gdpPercap)
+  )
+```
+
+
+```{r}
+gapminder %>%
+  group_by(continent) %>%
+  summarise(test = list(t.test(gdpPercap))) %>%  # 單樣本t檢定
+  mutate(tidied = purrr::map(test, broom::tidy)) %>% # 把coefficents,t-statistics提出
+  unnest(tidied) %>%
+  ggplot(aes(estimate, continent)) +
+  geom_point() +
+  geom_errorbarh(aes(
+    xmin = conf.low,
+    xmax = conf.high
+  ))
+```
+
+
+
+```{r}
+data("gapminder")
+gapminder %>%
+  distinct(continent, country) %>% #只取出兩者的組合
+  count(continent) %>% #計數
+  ggplot(aes(x = continent, y = n)) +
+  geom_col()
+```
+
+
+```{r}
+gapminder %>%
+  distinct(continent, country) %>%
+  count(continent) %>%
+  ggplot(aes(x = fct_reorder(continent, n), y = n)) + #fct_recorder() 照中位數排列
+  geom_col() +
+  coord_flip()
+```
+
+```{r}
+gapminder %>%
+  distinct(continent, country) %>%
+  count(continent) %>% 
+  mutate(coll = if_else(continent == "Asia", "red", "gray")) %>% 
+
+
+  ggplot(aes(x = fct_reorder(continent, n), y = n)) +
+  geom_text(aes(label = n), hjust = -0.25) +
+  geom_col(width = 0.8, aes(fill = coll) ) +
+  coord_flip() +
+  theme_classic() +
+  scale_fill_manual(values = c("#b3b3b3a0", "#D55E00")) +
+  theme(legend.position = "none",
+        axis.text = element_text(size = 11)
+        ) +
+  labs(title = "標題", x = "")
+```
+
+
+
+## unite
+```{r}
+dfa <- tribble(
+   ~school, ~class,
+  "chuansi", "01",
+  "chuansi", "02",
+  "shude", "07",
+  "shude", "08",
+  "huapulu", "101",
+  "huapulu", "103"
+)
+```
+
+```{r}
+df_united <- dfa %>% 
+   tidyr::unite(school, class, col = "school_plus_class", sep = "_", remove = FALSE)
+
+df_united
+```
+
+```{r}
+df_united %>%
+  tidyr::separate(school_plus_class, into = c("sch", "cls"), sep = "_", remove = F)
+```
+
+
+```{r}
+dfc <- tibble(x = c("1-12week", "1-10wk", "5-12w", "01-05weeks"))
+dfc
+```
+
+
+```{r}
+dfc %>% tidyr::extract(
+  x,
+  c("start", "end", "letter"), "(\\d+)-(\\d+)([a-z]+)",
+  remove = FALSE
+)
+```
+
+
+
+```{r}
+df <- tibble::tibble(
+  x = letters[1:3],
+  y = c(1:3),
+  z = c(0, 0, 0)
+)
+```
+
+
+```{r}
+df %>% select_if(is.numeric)
+
+df %>% select_if(~ n_distinct(.) > 2) #z並無2個以上outcome
+
+
+df %>% select_if(
+  ~ (is.numeric(.) | is.character(.))
+)
+```
+
+# summarise_if
+```{r}
+msleep <- ggplot2::msleep
+msleep %>%
+  dplyr::group_by(vore) %>%
+  dplyr::summarise_all(~ mean(., na.rm = TRUE))
+```
+
+```{r}
+msleep <- ggplot2::msleep
+msleep %>%
+  dplyr::group_by(vore) %>%
+  # summarise_if(is.numeric, ~mean(., na.rm = TRUE))
+  dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
+```
+
+
+
+## filter_if()
+.tbl, 數據框
+.predicate, 應用在列上的函數，一般作為列的選擇條件
+.vars_predicate,應用在一行上的函數，通過all_vars(), any_vars()返回值決定是否選取該行。
+
+
+```{r}
+mtcars %>% filter_if(~ all(floor(.) == .), all_vars(. != 0))
+
+
+```
+
+
+
+```{r}
+iris %>%
+  dplyr::group_by(Species) %>%
+  dplyr::group_map(~ broom::tidy(lm(Petal.Length ~ Sepal.Length, data = .x)))
+```
+
+## group_modify() 才是真正意義上的“數據框進、數據框出”。
+```{r}
+iris %>%
+  dplyr::group_by(Species) %>%
+  dplyr::group_modify(~ broom::tidy(lm(Petal.Length ~ Sepal.Length, data = .x)))
+```
+
+## 缺失值檢查與處理
+
+```{r}
+library(purrr)
+airquality <- as_tibble(airquality)
+
+airquality %>% purrr::map(~ sum(is.na(.)))
+```
+
+
+```{r}
+df_mtcars = as_tibble(mtcars)
+```
+
+
+```{r}
+df_mtcars %>%
+  mutate_at(vars(mpg, disp), ~ scale(., center = T, scale = T))
+
+```
+
+## 22.10.1行方向上的統計
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+library(tibble)
+library(purrr)
+library()
+```
+
+
+```{r}
+df <- tibble(id = letters[1:6], w = 10:15, x = 20:25, y = 30:35, z = 40:45)
+
+```
+
+
+### 怪怪的
+```{r}
+df %>% mutate(avg = mean(c(w, x, y, z)))
+```
+
+
+```{r}
+df <- tibble(id = letters[1:6], w = 10:15, x = 20:25, y = 30:35, z = 40:45)
+
+df %>%
+  rowwise() %>%
+  mutate(avg = mean(c(w, x, y, z)))
+```
+
+
+```{r}
+df %>%
+  rowwise() %>%
+  mutate(
+    avg = mean(c_across(w:z))
+  ) %>% View()
+```
+
+
+
+```{r}
+df <- tibble(id = letters[1:6], w = 10:15, x = 20:25, y = 30:35, z = 40:45)
+
+df %>%
+  rowwise(id) %>%
+  mutate(total = mean(c_across(w:z))) %>% View()
+```
+
+
+
+```{r}
+df %>%
+  rowwise(id) %>%
+  summarise(
+    m = mean(c_across(is.numeric))
+  ) %>% View()
+```
+
+
+## 22.10.3行方向上的建模
+
+```{r}
+mtcars <- mtcars %>% as_tibble()
+```
+
+```{r}
+x =  mtcars %>%
+  group_by(cyl) %>%
+  nest()
+```
+
+
+```{r}
+x = mtcars %>%
+  group_by(cyl) %>%
+  nest() %>%
+  mutate(model = purrr::map(data, ~ lm(mpg ~ wt, data = .))) %>%
+  mutate(result = purrr::map(model, ~ broom::tidy(.))) %>%
+  unnest(result)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

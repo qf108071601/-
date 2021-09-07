@@ -1,0 +1,133 @@
+---
+title: "Factor Analysis"
+author: "賴冠維"
+date: "2020/11/3"
+output: html_document
+---
+#### 因素分析 (factor analysis)  
+是統計學中一種多變量分析法。因素分析與主成分分析具有一些相同的概念與技巧，但兩者的建模推理方向相反。  假設可量測的隨機向量 $x=(x_1,\ldots,x_p)^T$ 服從一個未知的機率分布 $p({x})$，  
+期望值為 $\hbox{E}[\mathbf{x}]=\boldsymbol{\mu}=(\mu_1,\ldots,\mu_p)^T$  
+共變異數矩陣為 $\hbox{cov}[\mathbf{x}]=\Sigma=[\sigma_{ij}]，1\le i,j\le p$。  
+  
+  主成分分析的主要功用是降維 (dimension reduction)，我們從原始的變數 $x_1,\ldots,x_p$ 構築一組新變數 $z_1,\ldots,z_k,1\le k<p$  
+  具體地說，低維隨機向量 $\mathbf{z}=(z_1,\ldots,z_k)^T$ 由離差 (deviation) $\mathbf{x}-\boldsymbol{\mu}$ 的線性映射產生：
+  $$\mathbf{z}=W^T(\mathbf{x}-\boldsymbol{\mu})$$
+  其中 W 是一個 $p\times k$ 階矩陣滿足 $W^TW=I_k$ 。  
+  在因素分析，我們設想隨機向量 $\mathbf{x}$ 的資料生成模型 (generative model) 為
+$$\displaystyle \mathbf{x}=\boldsymbol{\mu}+F\mathbf{z}+\boldsymbol{\epsilon}$$
+
+其中 $\mathbf{z}=(z_1,\ldots,z_k)^T$ 是一組無法量測的隱藏變數，稱為隱藏因素 (hidden factor)、共同因素 (common factor) 或簡稱因素，
+F 是一個 $p\times k$ 階變換矩陣，$\boldsymbol{\epsilon}=(\epsilon_1,\ldots,\epsilon_p)^T$ 是代表雜音的隨機向量。  
+
+#### 模型
+
+給定可量測的隨機變數 $x_1,\ldots,x_p$，因素分析假設每個隨機變數 $x_i$ 的離差 $x_i-\mu_i$ 為因素 $z_1,\ldots,z_k，1\le k<p$，的線性組合加上殘差項$\epsilon_i$，如下：
+
+$\displaystyle \begin{aligned} x_1-\mu_1&=f_{11}z_1+\cdots+f_{1k}z_k+\epsilon_1,\\ &\vdots\\ x_p-\mu_p&=f_{p1}z_1+\cdots+f_{pk}z_k+\epsilon_p, \end{aligned}$
+
+或以向量─矩陣形式表示為
+
+$$\mathbf{x}-\boldsymbol{\mu}=F\mathbf{z}+\boldsymbol{\epsilon}$$
+
+其中 $F=[f_{ij}]$ 是一個 $p\times k$ 階常數矩陣，稱為因素負荷 (factor loading)，  
+描述因素 $\mathbf{z}$ 至多變數 $\mathbf{x}$ 的變換。你不妨想像 $z_1,\ldots,z_k$ 代表未知的信號源，  
+將 k 個信號同時送入$ p$ 個通道，每個通道各自有增強或衰減信號的方式 (線性組合)，  
+通道末端再引入雜音 (殘差) 就是我們接收到的變數 $x_1,\ldots,x_p$。
+  
+為便利分析，假設因素 $\mathbf{z}=(z_1,\ldots,z_k)^T$ 與殘差 $\boldsymbol{\epsilon}=(\epsilon_1,\ldots,\epsilon_p)^T$ 具有底下的機率性質：
+
+$\boldsymbol{\mu}=\mathbf{0}$，若不成立，直接從 $\mathbf{x}$ 減去 $\hbox{E}[\mathbf{x}]$。  
+$\hbox{E}[\mathbf{z}]=\mathbf{0}$ 且 $\hbox{cov}[\mathbf{z}]=I$，即每個信號的強度相同 $(\hbox{var}[z_j]=1)$ 且信號彼此獨立 $(\hbox{cov}[z_i,z_j]=0，i\neq j)$。  
+$\hbox{E}[\boldsymbol{\epsilon}]=\mathbf{0}$ 且 $\hbox{cov}[\boldsymbol{\epsilon}]=\Psi=\hbox{diag}(\psi_1,\ldots,\psi_p)$，即雜音的強度為 $\hbox{var}[\epsilon_i]=\psi_i$ 且雜音彼此獨立 $(\hbox{cov}[\epsilon_i,\epsilon_j]=0，i\neq j)$。  
+$\hbox{cov}[\epsilon_i,z_j]=0，i=1,\ldots,p，j=1,\ldots,k$，即雜音與信號完全無關。  
+因素分析的模型參數包括 $p\times k$ 階因素負荷 F 與殘差的變異數 $\Psi=\hbox{diag}(\psi_1,\ldots,\psi_p)$，合計 p(k+1) 個參數值。根據上述假設，你可以計算隨機向量 $\mathbf{x}$ 的期望值與共變異數矩陣。期望值 $\hbox{E}[\cdot]$ 是線性算子，因此
+
+$$\displaystyle \hbox{E}[\mathbf{x}]=\hbox{E}[F\mathbf{z}+\boldsymbol{\epsilon}]=F\hbox{E}[\mathbf{z}]+\hbox{E}[\boldsymbol{\epsilon}]=\mathbf{0}。$$
+
+使用此結果與前述假設，$\mathbf{x}$ 的共變異數矩陣 $\Sigma=[\sigma_{ij}]$ 計算如下 (見“共變異數矩陣的性質”)：
+
+$\displaystyle \begin{aligned}\Sigma&=\hbox{cov}[\mathbf{x}]=\hbox{E}[\mathbf{x}\mathbf{x}^T]\\ &=\hbox{E}\left[(F\mathbf{z}+\boldsymbol{\epsilon})(F\mathbf{z}+\boldsymbol{\epsilon})^T\right]\\ &=\hbox{E}\left[(F\mathbf{z}\mathbf{z}^TF^T+\boldsymbol{\epsilon}\mathbf{z}^TF^T+F\mathbf{z}\boldsymbol{\epsilon}^T+\boldsymbol{\epsilon}\boldsymbol{\epsilon}^T\right]\\ &=F\hbox{E}[\mathbf{z}\mathbf{z}^T]F^T+\hbox{E}[\boldsymbol{\epsilon}\mathbf{z}^T]F^T+F\hbox{E}[\mathbf{z}\boldsymbol{\epsilon}^T]+\hbox{E}[\boldsymbol{\epsilon}\boldsymbol{\epsilon}^T]\\ &=F\hbox{cov}[\mathbf{z}]F^T+\hbox{cov}[\boldsymbol{\epsilon}]\\ &=FF^T+\Psi.\end{aligned}$
+
+乘開上式可得 x_i 的變異數
+
+\displaystyle \hbox{var}[x_i]=\sigma_{ii}=\sum_{j=1}^kf_{ij}^2+\psi_i，
+
+其中包含兩個部分：(FF^T)_{ii}=\sum_{j=1}^kf_{ij}^2 稱為 x_i 的共同性 (communality)，意指透過共同的因素，x_i 與其他變數共享的變異成分；\psi_i 稱為 x_i 的特殊變異數 (specific variance)，意指 x_i 自己獨有不與其他變數共享的變異成分。因為 \Psi 是對角矩陣，x_i 與 x_j 的共變異數為 (FF^T)_{ij}，即
+
+\displaystyle \hbox{cov}[x_i,x_j]=\sigma_{ij}=\sum_{l=1}^kf_{il}f_{jl}。
+
+因素負荷 F 的元 f_{ij} 是變數 x_i 與因素 z_j 的共變異數，如下：
+
+\displaystyle \begin{aligned} \hbox{cov}[x_i,z_j]&=\hbox{cov}\left[\sum_{l=1}^kf_{il}z_l+\epsilon_i,z_j\right]=\hbox{E}\left[\left(\sum_{l=1}^kf_{il}z_l+\epsilon_i\right)z_j\right]\\ &=\sum_{l=1}^kf_{il}\hbox{E}[z_lz_j]=\sum_{l=1}^kf_{il}\,\hbox{cov}[z_l,z_j]=f_{ij}. \end{aligned}
+
+因素分析並不具有唯一的因素負荷 F。令 Q 是一個 k\times k 階正交矩陣 (orthogonal matrix)，Q^TQ=QQ^T=I。將上式嵌入因素分析模型，
+
+\mathbf{x}=FQQ^T\mathbf{z}+\boldsymbol{\epsilon}=F'\mathbf{z}'+\boldsymbol{\epsilon}，
+
+其中 F'=FQ 是對應新因素 \mathbf{z}'=Q^T\mathbf{z} 的因素負荷。不難驗證 \mathbf{z}' 滿足前述假設條件：\hbox{E}[\mathbf{z}']=\mathbf{0}，\hbox{cov}[\mathbf{z}']=I 且 \hbox{cov}[\epsilon_i,z'_j]=0，i=1,\ldots,p，j=1,\ldots,k。共變異數矩陣不會因選擇的因素負荷而改變，
+
+\Sigma=FF^T+\Psi=FQQ^TF^T+\Psi=F'(F')^T+\Psi。
+
+就解釋隨機向量 \mathbf{x} 的共變異數矩陣而言，因素 \mathbf{z} 配合負載 F 等價於因素 \mathbf{z}' 配合負載 F'。要排除因素分析的非唯一性，你可以加入一些額外條件，譬如，條件1：F^TF 是對角矩陣，或條件2：F^T\Psi^{-1}F 是對角矩陣。
+
+參數估計
+
+假設你有一筆樣本大小為 n 的數據 \{\mathbf{x}_1,\ldots,\mathbf{x}_n\}，每個數據點視為一個向量 \mathbf{x}_l=(x_{l1},\ldots,x_{lp})^T\in\mathbb{R}^p。定義 n\times p 階數據矩陣
+
+\displaystyle X=\begin{bmatrix}  \mathbf{x}_1^T\\  \vdots\\  \mathbf{x}_n^T  \end{bmatrix}=\begin{bmatrix}  x_{11}&\cdots&x_{1p}\\  \vdots&\ddots&\vdots\\  x_{n1}&\cdots&x_{np}  \end{bmatrix}，
+
+其中 x_{li} 表示第 i 個隨機變數 x_i 的第 l 個量測值，i=1,\ldots,p，l=1,\ldots,n。我們假設樣本已經去除平均數，\sum_{l=1}^n\mathbf{x}_l=\mathbf{0}。共變異數矩陣 \Sigma 通常以樣本共變異數矩陣估計：
+
+\displaystyle S=\frac{1}{n-1}\sum_{i=1}^n\mathbf{x}_i\mathbf{x}_i^T=\frac{1}{n-1}X^TX。
+
+接下來的問題是從給定的樣本共變異數矩陣 S=[s_{ij}] 求出因素分析的參數估計 \hat{F} 與 \hat{\Psi} 使得 S\approx \hat{F}\hat{F}^T+\hat{\Psi}。主因素分析 (principal factor analysis) 與最大似然估計 (maximum likelihood estimation) 是兩種常見的估計法。
+
+主因素分析
+
+主因素分析運用主成分分析方法計算。我們預先估計 \hat{\Psi}=\hbox{diag}(\hat{\psi}_1,\ldots,\hat{\psi}_p)。估計特殊變異數 \hat{\psi}_i 的一個合理常用方式是對變數 x_i 建立線性回歸，以其餘的 p-1 個變數當作預測變數，如下：
+
+\displaystyle x_{li}=b_1x_{l1}+\cdots+b_{i-1}x_{l,i-1}+b_{i+1}x_{l,i+1}+\cdots+b_px_{lp}+e_{li},~~l=1,\ldots,n,
+
+其中 e_{li} 為殘差。利用最小平方法求出參數 \{b_1,\ldots,b_p\}\setminus \{b_i\}，可得最小的殘差平方和 \sum_{l=1}^n\hat{e}_{li}^2，再令 \hat{\psi}_i=\frac{1}{n-1}\sum_{l=1}^n\hat{e}_{li}^2。
+
+定義簡約 (reduced) 共變異數矩陣 P=S-\hat{\Psi}，接下來要找出 \hat{F} 使得 P\approx \hat{F}\hat{F}^T。因為 P 是一個實對稱矩陣，寫出正交對角化表達式 (見“可對角化矩陣的譜分解”)
+
+\displaystyle P=UDU^T=\begin{bmatrix} \mathbf{u}_1&\cdots&\mathbf{u}_p \end{bmatrix}\begin{bmatrix} d_1&&\\ &\ddots&\\ &&d_p \end{bmatrix}\begin{bmatrix} \mathbf{u}_1^T\\ \vdots\\ \mathbf{u}_p^T\end{bmatrix}=\sum_{i=1}^pd_i\mathbf{u}_i\mathbf{u}_i^T，
+
+其中 U=\begin{bmatrix} \mathbf{u}_1&\cdots&\mathbf{u}_p \end{bmatrix} 是 p\times p 階正交矩陣，U^T=U^{-1}，且 D=\hbox{diag}(d_1,\ldots,d_p)，d_1\ge \cdots\ge d_p。如果 d_1,\ldots,d_k>0 且其餘的 d_i 接近零，則
+
+\displaystyle P\approx\sum_{i=1}^kd_i\mathbf{u}_i\mathbf{u}_i^T=U_kD_kU_k^T=(U_kD_k^{1/2})(U_kD_k^{1/2})^T，
+
+上式定義了 U_k=\begin{bmatrix} \mathbf{u}_1&\cdots&\mathbf{u}_k \end{bmatrix}，D_k=\hbox{diag}(d_1,\ldots,d_k)。因此，因素負荷的估計值為
+
+\hat{F}=[\hat{f}_{ij}]=U_kD_k^{1/2}。
+
+使用這個結果，我們可以重新估計特殊變異數：
+
+\displaystyle \hat{\psi}_i=s_{ii}-\sum_{j=1}^k\hat{f}_{ij}^2,~~i=1,\ldots,p。
+
+重複上面兩個步驟交替計算 \hat{F} 與 \hat{\Psi}，直到滿足收斂條件才停止。因為 U_k^TU_k=I_k，\hat{F} 滿足前述條件1，
+
+\displaystyle \hat{F}^T\hat{F}=(U_kD_k^{1/2})^T(U_kD_k^{1/2})=D_k^{1/2}U_k^TU_kD_k^{1/2}=D_k。
+
+如果特殊變異矩陣不存在，\Psi=0，因素分析模型 \mathbf{x}=F\mathbf{z} 退化為主成分分析 \mathbf{z}'=W^T\mathbf{x}。請注意，因素分析的因素 \mathbf{z} 其實與主成分 \mathbf{z}' 有不同的數值範圍，因為 W^TW=I_k，意思是 W 有單範正交 (orthonormal) 的行向量 (column vector)。從樣本共變異數矩陣的正交對角化表達式 S=V\Lambda V^T，其中 V^T=V^{-1}，\Lambda=\hbox{diag}(\lambda_1,\ldots,\lambda_p)，\lambda_1\ge\cdots\ge \lambda_p\ge 0，推得因素負荷估計 \hat{F}=V_k\Lambda^{1/2}_k，這裡 V_k 與 \Lambda_k^{1/2} 的定義方式同 U_k 與 D_k^{1/2}。因此，\hat{F}^T\hat{F}=\Lambda_k。若 \Lambda_k 是可逆的，則
+
+\begin{aligned} \mathbf{x}=\hat{F}\mathbf{z}&\Rightarrow \hat{F}^T\mathbf{x}=\hat{F}^T\hat{F}\mathbf{z}\\ &\Rightarrow \Lambda_k^{1/2}V_k^T\mathbf{x}=\Lambda_k\mathbf{z}\\ &\Rightarrow V_k^T\mathbf{x}=\Lambda_k^{1/2}\mathbf{z}. \end{aligned}
+
+最後一個式子表明主成分分析的變換矩陣為 W=V_k，滿足 W^TW=V_k^TV_k=I_k，主成分與因素的關係為 \mathbf{z}'=\Lambda_k^{1/2}\mathbf{z}，即有 (見“共變異數矩陣的性質”)
+
+\hbox{cov}[\mathbf{z'}]=\hbox{cov}[\Lambda_k^{1/2}\mathbf{z}]=\Lambda_k^{1/2}\hbox{cov}[\mathbf{z}]\Lambda_k^{1/2}=\Lambda_k^{1/2}I_k\Lambda_k^{1/2}=\Lambda_k，
+
+主成分保留了最大的變異總量 \hbox{trace}(\hbox{cov}[\mathbf{z'}])=\hbox{trace}\Lambda_k=\lambda_1+\cdots+\lambda_k。因此，共同因素 \mathbf{z} 即為標準化的主成分 \mathbf{z}'，z_j=z'_j/\sqrt{\lambda_j}。附帶一提，利用數據矩陣 X 的奇異值分解可求得 V 與 \Lambda (見“主成分分析與低秩矩陣近似”)。
+
+如果特殊變異矩陣是一個純量矩陣，\Psi=\psi I，\psi>0，我們稱此模型為機率主成分分析 (probabilistic PCA)，則
+
+\displaystyle \begin{aligned} S&=V\Lambda V^T\\ &=V\begin{bmatrix} \lambda_1-\psi&&\\ &\ddots&\\ &&\lambda_p-{\psi} \end{bmatrix}V^T+V\begin{bmatrix} {\psi}&&\\ &\ddots&\\ &&\psi\end{bmatrix}V^T\\ &\approx V\begin{bmatrix} \Lambda_k-{\psi}I_k&0\\ 0&0 \end{bmatrix}V^T+{\psi}I_p\\ &=V_k(\Lambda_k-{\psi}I_k)V_k^T+{\psi}I_p.\end{aligned}
+
+我們選擇估計值 \hat{\psi} 使得主對角元的誤差平方和 \sum_{i=k+1}^p(\lambda_i-{\psi})^2 為最小，即
+
+\displaystyle \hat{\psi}=\frac{1}{p-k}\sum_{i=k+1}^p\lambda_i，
+
+因素負荷則為
+
+\hat{F}=V_k(\Lambda_k-\hat{\psi}I_k)^{1/2}=V_k\,\hbox{diag}\left(\sqrt{\lambda_1-\hat{\psi}},\ldots,\sqrt{\lambda_k-\hat{\psi}}\right)。

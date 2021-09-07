@@ -1,0 +1,241 @@
+---
+title: "  Kmeans, Kmedoid  Clustering 資料分群"
+author: "賴冠維"
+date: "2020/11/10"
+output:
+  html_document: default
+  word_document: default
+---
+
+
+```{r}
+library(dplyr)
+library(magrittr) #pipelines
+library(tidyverse)  # data manipulation
+library(cluster)    # clustering algorithms
+library(factoextra) # clustering algorithms & visualization
+```
+
+#### 資料預處理:  
+(1)遺失值處理  
+(2)資料標準化  
+
+
+* USArrests是根據1973年，美國50州各州，平均每100,000個居民裡，  因為犯下Murder(謀殺)、Assault(襲擊他人)、與Rape(強暴)而遭逮補的人數，UrbanPop代表各州居住在都會區的人口百分比。
+
+```{r}
+inputData <- 
+  USArrests %>% 
+  na.omit() %>% # 忽略遺失值
+  scale() # 資料標準化
+```
+
+get_dist() 預設歐式距離
+```{r}
+distance <- get_dist(x = inputData)
+fviz_dist(dist.obj = distance,
+          gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+```
+
+
+##### Kmeans 步驟
+Method:  
+1. 任意從n個資料物件中選取K個物件當作起始集群的中心  
+2. 重複步驟1  
+3. 對於所有的n個物件，一一找其最近似的集群中心(一般是以距離近者相似度較高)，然後將該物件歸到最近似的集群  
+4. 根據步驟3的結果重新計算各個集群的中心點(計算每一個群聚(cluster) 裡的新平均數)  
+5. 重複步驟二到三，直到所設計的停止條件發生  
+
+一般是以沒有任何物件變換所屬集群為停止絛件(代表分群結果已經穩定不變)，也就是所謂的$square-error\ criterion$(減小每個群聚中，每一點與群中心的距離平方誤差)：
+$$E = \Sigma^K_{i=1}\Sigma_{p\in{C_i}}|p-m_i|^2$$
+$m_i$表集群i的中心  
+$p$是集群i內的物件  
+$C_i$則代表集群i  
+
+```{r}
+set.seed(101)
+k_clust <- kmeans(inputData, centers = 2, nstart = 25)
+str(k_clust)
+```
+
+```{r}
+fviz_cluster(k_clust, data = inputData)
+```
+
+```{r}
+# 嘗試多種k的分群效果
+set.seed(101)
+k_clust <- kmeans(inputData, centers = 2, nstart = 25)
+k_clust_3 <- kmeans(inputData, centers = 3, nstart = 25)
+k_clust_4 <- kmeans(inputData, centers = 4, nstart = 25)
+k_clust_5 <- kmeans(inputData, centers = 5, nstart = 25)
+ 
+ 
+# plots to compare
+p1 <- fviz_cluster(k_clust, geom = "point", data = inputData) + ggtitle("k = 2")
+p2 <- fviz_cluster(k_clust_3, geom = "point",  data = inputData) + ggtitle("k = 3")
+p3 <- fviz_cluster(k_clust_4, geom = "point",  data = inputData) + ggtitle("k = 4")
+p4 <- fviz_cluster(k_clust_5, geom = "point",  data = inputData) + ggtitle("k = 5")
+ 
+library(gridExtra)
+grid.arrange(p1, p2, p3, p4, nrow = 2) # Arrange multiple grobs on a page (將不會影響到par()中參數設定)
+
+```
+
+#### K-Medoid分群
+
+使用K-Means演算法的兩個限制為：  
+1. 不能處理類別變數資料 （kmeans(x = …只能為數值矩陣…)）
+2. 容易受離群值影響  
+
+
+
+$$E = \Sigma^K_{i=1}\Sigma_{p\in{C_i}}|p-m_i|$$
+
+
+$E$為所有absolute error的加總  
+$C_j$表示cluster  
+$P$表示在$C_j$內的點  
+$M_i$表示代表$C_j$內的object  
+
+
+1. K-Medoids最常使用的演算法為PAM(Partitioning Around Medoid, 分割環繞物件法）。
+2. K-Medoids比K-Means更強大之處在於他最小化相異度加總值，而非僅是歐式距離平方和。  
+3. 但遇到資料量較大時，K-Medoid法所需要的記憶體和運算時間都是龐大的，此時可以另外考慮
+clara(Clustering Large Applications)函數。(#差別在於clara為抽樣計算)
+
+#### PAM
+* PAM演算法將全部物件分群成k個群組  
+
+* 為每個群組決定一個代表物件(representative objects)，此代表物件稱之為medoid
+
+* 依據相似度來決定非medoid物件是屬於那一個群組，其相似度是以物件彼此之間的距離(歐基里德距離)來表示，d(Oa, Ob)表示物件Oa與Ob之間的距離。
+
+* 例如Oi為medoid，而Oj為非medoid物件，如果$d(Oj,Oi)=min\{ d(Oj,Oe)\ }$，Oe表示所有的medoids，則Oj歸屬於Oi群組。
+
+* 對任一個非medoid物件$O_j$,當一個medoid $O_i$被一個非medoid物件$O_h$取代時，所造成的改變成本Cjih定義如下：$C_{jih}= d(O_j, O_m) –d(O_j, O_n)$ 
+* 以Oh取代Oi成為medoid 之後，所造成的總改變成本為：$TC_{ih}=\Sigma_j{C_{jih}}$
+若$TC_{ih}>0$時，表示以Oh取代Oi之後的總距離比取代前大，則Oi將不會被Oh所取代。以$TC_{ih}$為衡量依據
+
+
+
+```{r}
+kmedoid.cluster <- pam(x = inputData, k=2) 
+ 
+# 分群結果視覺化
+fviz_cluster(kmedoid.cluster, data = inputData,main = 'K-Medoid')
+```
+
+#### 決定最適的分群數  
+1. Elbow Method（亦稱做Hartigan法）
+2. Average Silhouette method（側影圖法）
+3. Gap statistic（Gap統計量，預測-觀測）
+
+
+##### 1.Elbow Method  
+最小化各群群內變異加總（total within-cluster sum of square，wss）
+
+```{r}
+set.seed(123)
+ 
+# function to compute total within-cluster sum of square 
+wss <- function(k) {
+  kmeans( x = inputData, centers =  k, nstart = 10 )$tot.withinss
+}
+ 
+# Compute and plot wss for k = 1 to k = 15
+k.values <- 1:15
+ 
+# extract wss for 2-15 clusters
+wss_values <- map_dbl(k.values, wss)
+ 
+plot(k.values, wss_values,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+```
+
+```{r}
+set.seed(123)
+fviz_nbclust(x = inputData,FUNcluster = kmeans, method = "wss")
+```
+
+##### Silhouette Plot
+* 輪廓係數：$s(i) = \frac{b(i)-a(i)}{max\{a(i),b(i)\}}$  
++ 計算樣本點 i 至同群內其他樣本點的平均距離 ai，ai 越小，代表樣本點 i 越應該被歸類至該群
++ 計算樣本點 i 至其他某群Cj的所有樣本之平均距離 bij，bi 越大，代表樣本點 i 越不屬於該群
++ ai稱為組內不相似度，bi稱為組間不相似度，根據兩者定義輪廓係數（Silhouette coefficient）  
+
+判斷：
+si接近1，代表樣本 i 的分群合理  
+si接近-1，代表樣本 i 更應該被分類至其他群內  
+si接近0，代表樣本 i 在兩個群的邊界上
+```{r}
+# 繪製側影圖
+plot(kmedoid.cluster,which.plots = 2)
+```
+
+
+```{r}
+# function to compute average silhouette for k clusters
+avg_sil <- function(k) {
+  km.res <- kmeans(x = inputData, centers = k, nstart = 25)
+  ss <- silhouette(km.res$cluster, dist(inputData))
+  mean(ss[, 3])
+}
+ 
+# Compute and plot wss for k = 2 to k = 15
+k.values <- 2:15
+ 
+# extract avg silhouette for 2-15 clusters
+avg_sil_values <- map_dbl(k.values, avg_sil)
+ 
+plot(k.values, avg_sil_values,
+     type = "b", pch = 19, frame = FALSE, 
+     xlab = "Number of clusters K",
+     ylab = "Average Silhouettes")
+```
+
+```{r}
+fviz_nbclust(inputData, kmeans, method = "silhouette")
+```
+
+
+#### Gap
+Gap Statistic法可以應用在任何分群演算法上（比如說分裂式分群或階層式分群）。
+Gap Statistic(k): 比較不同k水準值下，實際觀測值分群結果的群內總變異($Wk$)與自助抽樣法B回產生樣本分群結果期望群內總變異($\bar{W_k}$)，即衡量觀測和預期之間的差距。  
+群內總變異的期望值($\bar{W_k}$): 使用Bootstap進行重新抽樣，計算k水準值下重新抽樣樣本分群結果的群內總變異(Wki∼WkB)，並計算 k水準值下的群內總變異期望值，即  
+$$E(W_k)=mean(W_k)=\bar{W_k}= \frac{1}{B}∑_{i=1}^{B}log(W_{ki})$$
+
+群內總變異的標準差$Standard Deviation(Sd(W_k))$:
+$$Sd(Wk)=\sqrt{\frac{1}{B}∑_i^B=(log(W_{ki})–Wk)^2}$$
+群內總變異樣本平均值的標準誤Standard Error(sk):   即樣本平均值($\bar{W_k}$)與真實母體平均值(μk)的變異。
+$$s_k=sd(k)×\sqrt{1+\frac{1}{B}}$$
+自助抽樣將模擬蒙地卡羅的採樣過程，也就是說每一個變數$x_i$，會依據他們的最大最小值範圍$[min(x_i),max(x_i)]$，來重新計算標準化後的值。
+Gap Statistic則是計算在不同k水準值下，觀測與預期值的總群內變異差異，公式如下：
+$$Gap(k)=\bar{W_k}−W_k=\frac1B∑_i^Blog(W_{ki})–W_k$$
+ 並且我們選擇使Gap(k)最大化的最小的k值，以符合：
+$$Gap(k)≥Gap(k+1)−s_{k+1}$$
+
+**即表示k群的分群結構和虛無假設的uniform分配（沒有分群）有很大的差距。**  
+我們可以透過cluster套件中的clusGap()函數來計算不同k水平值對應的該統計量(Gap)以及標準誤(Standard Error, SE)。也因為我們要找到使最大化Gap(k)的最小k值，所以記得調整參數method=”firstmax”。將結果印出後，我們可看到每個對應k水平值的：  
+* logW: 觀測值群內總變異。
+* E.logW: 群內總變異期望值。
+* gap: E.logW – logW統計量。
+* SE.sim: 標準誤(simulation standard error)。
+
+```{r}
+# compute gap statistic
+set.seed(123)
+gap_stat <- clusGap(x = inputData, FUN = kmeans, nstart = 25,
+                    K.max = 10, B = 50)
+# Print the result
+print(gap_stat, method = "firstmax")
+
+fviz_gap_stat(gap_stat)
+```
+
+
+
+
+
